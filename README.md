@@ -27,7 +27,7 @@
 ![alt](images/overlaynetwork.png)
 
 - Overlay networking là công nghệ cho phép tạo ra các mạng ảo (logic) trên hệ thống mạng vật lý bên dưới (underlay network) mà không ảnh hưởng hoặc ảnh hưởng không đáng kể tới hạ tầng mạng bên dưới. Cụ thể hơn, với overlay network, ta có thể tạo ra các mạng ảo L2 trên nền hạ tầng mạng L3 network.
- 
+
 **2. Cơ chế hoạt động **
 
 ![alt](images/vm-to-vm.png)
@@ -42,7 +42,7 @@
 
 ![alt](images/image1.png)
 
-- Theo hình mô tả ở trên, địa chỉ nguồn và đích trong outer IP header sẽ định danh cho endpoint của tunnel. Tất cả các host tham gia vào VXLAN/GRE thì hoạt động như một tunnel end points. Chức năng của Tunnel Endpoint là đóng gói VM trafic trong một IP header để gửi qua mạng IP bên dưới.
+- Theo hình mô tả ở trên, địa chỉ nguồn và đích trong outer IP header sẽ định danh cho endpoint của tunnel. Tất cả các host tham gia vào VXLAN/GRE thì hoạt động như một tunnel end points.
 
 - Các địa chỉ nguồn và đích trong Inner IP header định danh cho các VM gửi và nhận payload.
 
@@ -81,7 +81,5 @@
 - Đây là một phương pháp đơn giản và hiệu quả để chuyển dữ liệu thông qua mạng public network, như Internet. GRE cho phép hai bên chia sẻ dữ liệu mà họ không thể chia sẻ với nhau thông qua mạng public network.
 
 - GRE đóng gói dữ liệu và chuyển trực tiếp tới thiết bị mà de-encapsulate gói tin và định tuyến chúng tới đích cuối cùng. Gói tin và định tuyến chúng tới đích cuối cùng. GRE cho phép các switch nguồn và đích hoạt động như một kết nối ảo point-to-point với các thiết bị khác (bởi vì outer header được áp dụng với GRE thì trong suốt với payload được đóng gói bên trong).
-
-- GRE frame format:
 
 **4. Lab**
