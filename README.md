@@ -17,13 +17,17 @@
 **1. Giới thiệu về Overlay network**
 
 - Trong những năm trở lại đây, các kỹ thuật ảo hóa và đám mây đã trở nên phổ biến hơn bao giờ hết. Trong trung tâm dữ liệu ảo hóa, mỗi máy chủ vật lý có thể chạy một hoặc nhiều máy chủ ảo dựa trên nền hypervisor.
-- Kiến trúc mạng bây giờ phải đối mặt với nhu cầu kết nối giữa các máy chủ ảo với nhau, mỗi Virtual Machine (VM) yêu cầu 1 địa chỉ MAC duy nhất và 1 địa chỉ IP. Mặt khác việc di chuyển các máy chủ ảo từ máy chủ vật lý này sang máy chủ vật lý khác phải nhanh chóng, thuận lợi. Để đáp ứng các yêu cầu này, các kỹ thuật chồng lấn khác nhau (network overlay) được ra đời bao gồm: VXLAN, GRE, SPBV, TRILL, Fabric Path… Cụ thể trong khuôn khổ của bài viết này mình sẽ trình bày về VXLAN và GRE.
-- Vậy Overlay network là gì?
+
+- Kiến trúc mạng bây giờ phải đối mặt với nhu cầu kết nối giữa các máy chủ ảo với nhau, mỗi Virtual Machine (VM) yêu cầu 1 địa chỉ MAC duy nhất và 1 địa chỉ IP. 
+
+- Trong trung tâm dữ liệu ảo hóa, các mạng L2 này cần được cô lập thành các mạng riêng biệt, nếu như với môi trường với số lượng endpoint nhỏ, VLAN là giải pháp hoàn hảo. Tuy nhiên, khi mà số lượng máy ảo trên các máy chủ vật lý càng ngày càng tăng với số lượng lớn theo thời gian ( ví dụ trong môi trường cloud computing), kéo theo yêu cầu cô lập các mạng ảo này thì nảy sinh vấn đề vì số VLAN ID tối đa chỉ là 4096. Mặt khác việc di chuyển các máy chủ ảo từ máy chủ vật lý này sang máy chủ vật lý khác phải nhanh chóng, thuận lợi. Để đáp ứng các yêu cầu này, các kỹ thuật chồng lấn khác nhau (network overlay) được ra đời bao gồm: VXLAN, GRE, SPBV, TRILL, Fabric Path… Cụ thể trong khuôn khổ của bài viết này mình sẽ trình bày về VXLAN và GRE.
+
+- Đầu tiên ta tìm hiểu Overlay network là gì?
+
+![alt](images/overlaynetwork.png)
+
 - Overlay networking là công nghệ cho phép tạo ra các mạng ảo (logic) trên hệ thống mạng vật lý bên dưới (underlay network) mà không ảnh hưởng hoặc ảnh hưởng không đáng kể tới hạ tầng mạng bên dưới. Cụ thể hơn, với overlay network, ta có thể tạo ra các mạng ảo L2 trên nền hạ tầng mạng L3 network.
-- Trong trung tâm dữ liệu ảo hóa, các mạng L2 này cần được cô lập thành các mạng riêng biệt, nếu như với môi trường với số lượng endpoint nhỏ, VLAN là giải pháp hoàn hảo. Tuy nhiên, khi mà số lượng máy ảo trên các máy chủ vật lý càng ngày càng tăng với số lượng lớn theo thời gian ( ví dụ trong môi trường cloud computing), kéo theo yêu cầu cô lập các mạng ảo này thì nảy sinh vấn đề vì số VLAN ID tối đa chỉ là 4096. 
-
--> Ta cần tới công nghệ overlay network như: GRE, VXLAN
-
+ 
 **2. Cơ chế hoạt động **
 
 ![alt](images/vm-to-vm.png)
@@ -78,4 +82,6 @@
 
 - GRE đóng gói dữ liệu và chuyển trực tiếp tới thiết bị mà de-encapsulate gói tin và định tuyến chúng tới đích cuối cùng. Gói tin và định tuyến chúng tới đích cuối cùng. GRE cho phép các switch nguồn và đích hoạt động như một kết nối ảo point-to-point với các thiết bị khác (bởi vì outer header được áp dụng với GRE thì trong suốt với payload được đóng gói bên trong).
 
--
+- GRE frame format:
+
+**4. Lab**
