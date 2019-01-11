@@ -10,7 +10,7 @@
    
    	4.Lab
    
-   	5.Tổng kết   
+   	5.Lời kết   
 
 ########
 
@@ -72,7 +72,7 @@
 
     - Outer IP Header: Cung cấp địa chỉ IP nguồn của VTEP nguồn kết nối với VM bên trong. Địa chỉ IP outer đích là địa chỉ IP của VTEP nhận frame.
 
-    - Outer Ethernet Header: cung cấp địa chỉ MAC nguồn của VTEP có khung frame ban đầu. Địa chỉ MAC đích là địa chỉ của hop tiếp theo được định tuyến bởi VTEP
+    - Outer Ethernet Header: cung cấp địa chỉ MAC nguồn của VTEP có khung frame ban đầu. Địa chỉ MAC đích là địa chỉ của hop tiếp theo được định tuyến bởi VTEP.
 	
 **3.2. GRE**
 
@@ -84,16 +84,16 @@
 
 **4. Lab**
 
-- **4.1. Lab VXLAN với Open vSwitch
+**4.1. Lab VXLAN với Open vSwitch**
 
 - Topology:
 	- Host 1: 192.168.30.130
-		* vm1: 10.0.0.101/24
+		* vm1(cirros0): 10.0.0.101/24
 		* vswitch br0: 10.0.0.1
 		* vswitch br1: 192.168.30.130
 	
 	- Host 2: 192.168.30.184
-		* vm2: 10.0.0.102/24
+		* vm2(cirros1): 10.0.0.102/24
 		* vswitch br0: 10.0.0.2
 		* vswitch br1: 192.168.30.184
 		
@@ -105,7 +105,7 @@
 
 	- Trên 2 host này, sẽ được cài hệ điều hành Ubuntu Server 16.04, cài sẵn các phần mềm Open vSwitch, KVM với QEMU, libvirt-bin để tạo các vm. 2 host này đều sủ dụng card mạng ens33 ( coi như là card mạng vật lý).
 
-	- Dùng wireshark để bắt gói tin VXLAN
+	- Dùng wireshark để bắt và phân tích gói tin VXLAN
 	
 - Cấu hình:
 
@@ -174,12 +174,12 @@
 	* Cấu hình VXLAN tunnel cho vswitch br0 trên host 1:
 	
 	```
-	ovs-vsctl add-port br0 vxlan1 -- set interface vxlan1 type=vxlan option:remote_ip=192.168.30.130
+	ovs-vsctl add-port br0 vxlan1 -- set interface vxlan1 type=vxlan option:remote_ip=192.168.30.184
 	```
 	* Cấu hình VXLAN tunnel cho vswitch br0 trên host 2:
 	
 	```
-	ovs-vsctl add-port br0 vxlan1 -- set interface vxlan1 type=vxlan option:remote_ip=192.168.30.184
+	ovs-vsctl add-port br0 vxlan1 -- set interface vxlan1 type=vxlan option:remote_ip=192.168.30.130
 	```
 	
 	* Show config vừa cấu hình:
@@ -233,10 +233,10 @@
  	ovs0                 active     yes           yes
 	```
 	
-	* Create Virtual machines testvm and attach network ovs0 vừa tạo ở trên ( làm tương tự với host còn lại):
+	* Create Virtual machines testvm and attach network ovs0 vừa tạo ở trên ( làm tương tự với host còn lại, đổi tên vm nếu bạn muốn):
 	
 	```
-	virt-install --name=testvm --ram=512 --vcpus=1 --cdrom=/root/ubuntu-16.04.2-server-amd64.iso --os-type=linux --os-variant=ubuntu16.04 --network network:ovs0 --disk path=/var/lib/libvirt/images/testvm2.dsk,size=8
+	virt-install --name=testvm1 --ram=512 --vcpus=1 --cdrom=/root/ubuntu-16.04.2-server-amd64.iso --os-type=linux --os-variant=ubuntu16.04 --network network:ovs0 --disk path=/var/lib/libvirt/images/testvm2.dsk,size=8
 	```
 	
 	* *Note: Fix qemu-kvm: could not open disk image ' ': Permission denied các bạn có thể tham khảo ở đây:*
@@ -255,10 +255,26 @@
 	
 	![alt](images/testping.png)
 	
-	* Dùng wireshark bắt gói tin và phân tích: 
+	-> Dùng wireshark phân tích, ta thấy được các trường VXLANID, UDP port, IP host, IP vm đúng với lý thuyết mà mình trình bày ở trên.
 	
 	![alt](images/wireshark.png)
 	
+**4.2. Lab GRE với Open vSwitch**	
+
+- Tương tự với các bước thực hiện lab với VXLAN ở trên, đối với bài Lab với GRE các bạn chỉ cần thay đổi duy nhất cấu hình GRE tunnel cho vswitch br0:
+
+	* Host 1:
 	
+	```
+	ovs-vsctl add-port br0 gre1 -- set interface gre1 type=gre option:remote_ip=192.168.30.184
+	```
 	
+	* Host 2:
 	
+	```
+	ovs-vsctl add-port br0 gre1 -- set interface gre1 type=gre option:remote_ip=192.168.30.130
+	```
+	
+**5. Lời kết:**
+
+- Trên đây là những đúc rút của tôi sau quá trình tìm hiểu về VXLAN/GRE, rất mong các bạn đọc và cùng chia sẻ những kiến thức về VXLAN/GRE.  
