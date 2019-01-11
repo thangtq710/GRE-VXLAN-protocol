@@ -83,3 +83,182 @@
 - GRE đóng gói dữ liệu và chuyển trực tiếp tới thiết bị mà de-encapsulate gói tin và định tuyến chúng tới đích cuối cùng. Gói tin và định tuyến chúng tới đích cuối cùng. GRE cho phép các switch nguồn và đích hoạt động như một kết nối ảo point-to-point với các thiết bị khác (bởi vì outer header được áp dụng với GRE thì trong suốt với payload được đóng gói bên trong).
 
 **4. Lab**
+
+- **4.1. Lab VXLAN với Open vSwitch
+
+- Topology:
+	- Host 1: 192.168.30.130
+		* vm1: 10.0.0.101/24
+		* vswitch br0: 10.0.0.1
+		* vswitch br1: 192.168.30.130
+	
+	- Host 2: 192.168.30.184
+		* vm2: 10.0.0.102/24
+		* vswitch br0: 10.0.0.2
+		* vswitch br1: 192.168.30.184
+		
+![alt](images/lab.png)
+
+- Mô tả:
+
+	- Dưới đây mình sẽ thực hiện 1 bài lab sử dụng vmware để chạy 2 máy ảo host1, host2 đóng vai trò như các node vật lí trong thực tế.
+
+	- Trên 2 host này, sẽ được cài hệ điều hành Ubuntu Server 16.04, cài sẵn các phần mềm Open vSwitch, KVM với QEMU, libvirt-bin để tạo các vm. 2 host này đều sủ dụng card mạng ens33 ( coi như là card mạng vật lý).
+
+	- Dùng wireshark để bắt gói tin VXLAN
+	
+- Cấu hình:
+
+	* Tạo 2 vSwitch br0 và br1 trên cả 2 host.
+
+	* Cấu hình chế độ mạng bridge cho vSwitch br1 và card mạng ens33 trên cả 2 host.
+	
+	* Trên HOST 1, tạo VM1(cirros1) kết nối với vSwitch br0. Trên HOST 2 tạo VM2(cirros2) kết nối với vSwitch br0.
+
+- Mục tiêu bài lab:
+
+	* Kiểm tra kết nối giữa VM1 và VM2.
+    * Kiếm tra gói tin VXLAN và so sánh với lý thuyết.
+	
+- Thực hiện: 
+	* Đầu tiên cài đặt Open vSwitch và KVM trên cả 2 Host:
+	```
+	apt-get install qemu-kvm qemu virt-manager virt-viewer libvirt-bin libvirt-dev
+	apt-get install openvswitch-switch
+	```
+	
+	* Tạo 2 vswitch br0 và br1 trên cả 2 host:
+	
+	```
+	ovs-vsctl add-br br0
+	ovs-vsctl add-br br1
+	```
+	
+	* Bật 2 vswitch trên cả 2 host 
+	
+	```
+	ip link set dev br0 up
+	ip link set dev br1 up
+	```
+	
+	* Trên host1 tạo chế độ mạng bridge cho vswitch br1 và card mạng ens33:
+	
+	```
+	ovs-vsctl add-port br1 ens33 
+	ifconfig ens33 0 && ifconfig br1 192.168.30.184/24
+	```
+	* Trên host2 tạo chế độ mạng bridge cho vswitch br1 và card mạng ens33:
+	
+	```
+	ovs-vsctl add-port br1 ens33 
+	ifconfig ens33 0 && ifconfig br1 192.168.30.130/24
+	```
+	
+	* Add lại route trên cả 2 host:
+	
+	```
+	route add default gw 192.168.30.1 br1
+	```
+	
+	* Cấu hình IP cho br0 trên host 1:
+	
+	```
+	ip a add 10.0.0.1/24 dev br0
+	```
+	* Cấu hình IP cho br0 trên host 2:
+	
+	```
+	ip a add 10.0.0.2/24 dev br0
+	```
+	
+	* Cấu hình VXLAN tunnel cho vswitch br0 trên host 1:
+	
+	```
+	ovs-vsctl add-port br0 vxlan1 -- set interface vxlan1 type=vxlan option:remote_ip=192.168.30.130
+	```
+	* Cấu hình VXLAN tunnel cho vswitch br0 trên host 2:
+	
+	```
+	ovs-vsctl add-port br0 vxlan1 -- set interface vxlan1 type=vxlan option:remote_ip=192.168.30.184
+	```
+	
+	* Show config vừa cấu hình:
+	
+	```
+	root@ubuntu:~# ovs-vsctl show
+	a5886467-efe3-425a-acf9-ae949e0b2207
+    Bridge "br0"
+        Port "vxlan1"
+            Interface "vxlan1"
+                type: vxlan
+                options: {remote_ip="192.168.30.130"}
+        Port "vnet0"
+            Interface "vnet0"
+        Port "br0"
+            Interface "br0"
+                type: internal
+    Bridge "br1"
+        Port "ens33"
+            Interface "ens33"
+        Port "br1"
+            Interface "br1"
+                type: internal
+    ovs_version: "2.5.5"
+	```
+	
+	* Tạo mạng ovs0 với vswitch ovs1 trên cả 2 host: 
+	
+	```
+	<network>
+  		<name>ovs0</name>
+  		<forward mode='bridge'/>
+  		<bridge name='br0'/>
+  		<virtualport type='openvswitch'/>
+	</network>
+	```
+	* Thực hiện các command sau để tạo mạng và bắt đầu mạng:
+
+	```
+	virsh net-define ovs0.xml
+	virsh net-start ovs0
+	virsh net-autostart ovs0
+	```
+	* Check mạng vừa tạo:
+	
+	```
+	root@ubuntu:~# virsh net-list
+ 	Name                 State      Autostart     Persistent
+	----------------------------------------------------------
+ 	default              active     yes           yes
+ 	ovs0                 active     yes           yes
+	```
+	
+	* Create Virtual machines testvm and attach network ovs0 vừa tạo ở trên ( làm tương tự với host còn lại):
+	
+	```
+	virt-install --name=testvm --ram=512 --vcpus=1 --cdrom=/root/ubuntu-16.04.2-server-amd64.iso --os-type=linux --os-variant=ubuntu16.04 --network network:ovs0 --disk path=/var/lib/libvirt/images/testvm2.dsk,size=8
+	```
+	
+	* *Note: Fix qemu-kvm: could not open disk image ' ': Permission denied các bạn có thể tham khảo ở đây:*
+	
+	```
+	https://github.com/jedi4ever/veewee/issues/996
+	```
+	
+	* Host testvm2 được tạo với IP: 10.0.0.102
+	
+	![alt](images/testvm.png)
+	
+	* Tương tự ta tạo VM (testvm1) trên host 1 với IP: 10.0.0.101
+	
+	-> Kết quả ta test thử kết nối giữa 2 vm trên 2 host:
+	
+	![alt](images/testping.png)
+	
+	* Dùng wireshark bắt gói tin và phân tích: 
+	
+	![alt](images/wireshark.png)
+	
+	
+	
+	
